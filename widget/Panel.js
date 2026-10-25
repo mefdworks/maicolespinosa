@@ -42,10 +42,11 @@ function fechaCorta(iso) {
   return ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'][+p[1] - 1] + ' ' + (+p[2]);
 }
 
-function texto(stack, t, tam, color, peso) {
+function texto(stack, t, tam, color, peso, lineas) {
   const x = stack.addText(String(t));
   x.font = peso ? Font.boldSystemFont(tam) : Font.systemFont(tam);
   x.textColor = color || INK;
+  if (lineas) x.lineLimit = lineas;
   return x;
 }
 
@@ -71,8 +72,8 @@ function armar(d, familia) {
     fila.addSpacer();
     cifra(fila, d.deHoy, 'Hoy', INK);
     w.addSpacer(6);
-    if (d.evento) { texto(w, d.evento.hora + ' ' + d.evento.titulo, 11, INK, true).lineLimit(2); }
-    else if (d.proximas[0]) { texto(w, d.proximas[0].tarea, 11, INK, true).lineLimit(2); }
+    if (d.evento) { texto(w, d.evento.hora + ' ' + d.evento.titulo, 11, INK, true, 2); }
+    else if (d.proximas[0]) { texto(w, d.proximas[0].tarea, 11, INK, true, 2); }
     else texto(w, 'Todo al día', 11, SUAVE, true);
     return w;
   }
@@ -91,7 +92,7 @@ function armar(d, familia) {
     e.layoutVertically();
     texto(e, 'Siguiente', 10, SUAVE, true);
     texto(e, d.evento.hora, 16, INK, true);
-    texto(e, d.evento.titulo, 10, SUAVE).lineLimit(1);
+    texto(e, d.evento.titulo, 10, SUAVE, false, 1);
   }
   w.addSpacer(8);
   const max = familia === 'large' ? 8 : 3;
@@ -104,10 +105,9 @@ function armar(d, familia) {
     punto.font = Font.systemFont(8);
     punto.textColor = color;
     f.addSpacer(6);
-    const tt = texto(f, t.tarea, 12, INK, true);
-    tt.lineLimit(1);
+    texto(f, t.tarea, 12, INK, true, 1);
     f.addSpacer();
-    texto(f, t.cliente ? t.cliente + ' · ' + fechaCorta(t.fecha) : fechaCorta(t.fecha), 10, t.fecha < d.hoy ? ROJO : SUAVE, true).lineLimit(1);
+    texto(f, t.cliente ? t.cliente + ' · ' + fechaCorta(t.fecha) : fechaCorta(t.fecha), 10, t.fecha < d.hoy ? ROJO : SUAVE, true, 1);
     w.addSpacer(4);
   });
   if (!d.proximas.length) texto(w, 'Todo al día. Sin tareas con fecha esta semana.', 12, SUAVE, true);
