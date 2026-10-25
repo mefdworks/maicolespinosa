@@ -1,9 +1,11 @@
 // Panel de Maicol — widget para Scriptable (iPhone).
-// Primera vez: abre este script dentro de Scriptable, ejecútalo y pega el enlace del WIDGET que muestra
-// portalCrearTokens() en el Apps Script. Se guarda en el llavero del teléfono; no queda en el código.
+// Primera vez: abre este script dentro de Scriptable, ejecútalo y pega la clave del widget (WIDGET_TOKEN, en las
+// propiedades del Apps Script) o el enlace del WIDGET. Se guarda en el llavero del teléfono; no queda en el código.
 // Después agrega un widget de Scriptable a la pantalla de inicio y elige este script.
 
 const CLAVE = 'mp_widget';
+// Despliegue publicado del Apps Script del agente. Sola no da acceso a nada: sin clave responde "no autorizado".
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwxmVtjvsmTBMg81foW9QJmsrEzeywOiR2BKiMZBzlIP4-VgNlPwkqS8FVJo-CcrsWi/exec';
 // Paleta de la interfaz de Henry (siempre clara).
 const INK = new Color('#1a1a2e');
 const FONDO = new Color('#ffffff');
@@ -13,23 +15,22 @@ const ROJO = new Color('#c44a2a');
 
 async function configurar() {
   const a = new Alert();
-  a.title = 'Enlace del widget';
-  a.message = 'Pega el enlace que mostró portalCrearTokens().';
-  a.addTextField('https://…');
+  a.title = 'Clave del widget';
+  a.message = 'Pega la clave (WIDGET_TOKEN) o el enlace completo que mandó el bot.';
+  a.addTextField('Clave');
   a.addAction('Guardar');
   a.addCancelAction('Cancelar');
   if ((await a.present()) < 0) return null;
-  const txt = a.textFieldValue(0).trim();
-  const hash = txt.split('#')[1] || '';
-  const p = {};
-  hash.split('&').forEach(function (kv) { const i = kv.indexOf('='); if (i > 0) p[kv.slice(0, i)] = decodeURIComponent(kv.slice(i + 1)); });
-  if (!p.u || !p.k) { const e = new Alert(); e.message = 'El enlace no tiene la forma esperada.'; e.addAction('OK'); await e.present(); return null; }
-  Keychain.set(CLAVE, JSON.stringify({ u: p.u, k: p.k }));
-  return { u: p.u, k: p.k };
+  let k = a.textFieldValue(0).trim();
+  const m = k.match(/[#&]k=([A-Za-z0-9_-]+)/);
+  if (m) k = m[1];
+  if (!/^[A-Za-z0-9_-]{16,}$/.test(k)) { const e = new Alert(); e.message = 'No reconozco esa clave.'; e.addAction('OK'); await e.present(); return null; }
+  Keychain.set(CLAVE, JSON.stringify({ k: k }));
+  return { k: k };
 }
 
 async function datos(cfg) {
-  const req = new Request(cfg.u + (cfg.u.indexOf('?') >= 0 ? '&' : '?') + 'action=widget&t=' + encodeURIComponent(cfg.k));
+  const req = new Request(SCRIPT_URL + '?action=widget&t=' + encodeURIComponent(cfg.k));
   req.timeoutInterval = 20;
   const r = await req.loadJSON();
   if (r.error) throw new Error(r.error);
@@ -117,7 +118,8 @@ function armar(d, familia) {
 async function main() {
   let cfg = null;
   try { cfg = JSON.parse(Keychain.contains(CLAVE) ? Keychain.get(CLAVE) : 'null'); } catch (e) { cfg = null; }
-  if (!cfg) {
+  if (!cfg || !cfg.k) {
+    cfg = null;
     if (config.runsInWidget) {
       const w = new ListWidget();
       texto(w, 'Abre Scriptable y ejecuta este script para conectarlo.', 12, INK, true);
