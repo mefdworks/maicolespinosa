@@ -95,7 +95,7 @@ function armar(d, familia) {
     texto(e, d.evento.titulo, 10, SUAVE, false, 1);
   }
   w.addSpacer(8);
-  const max = familia === 'large' ? 8 : 3;
+  const max = familia === 'large' || familia === 'extraLarge' ? 10 : 3;
   d.proximas.slice(0, max).forEach(function (t) {
     const f = w.addStack();
     f.layoutHorizontally();
