@@ -8,7 +8,7 @@
   var D = null;         // datos del portal
   var VERIF = null;     // "por verificar" (carga perezosa)
   var BIT = {};         // bitácoras por cliente
-  var filtros = { cliente: '', perfil: 'Todos', tipo: 'Todos', q: '', tarea: 'Todas', tcliente: '' };
+  var filtros = { cliente: '', perfil: 'Todos', tipo: 'Todos', acliente: 'Todos', ctipo: 'Todos', q: '', tarea: 'Todas', tcliente: '' };
 
   function esc(s) {
     return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -28,6 +28,19 @@
     back: '<path d="M15 5l-7 7 7 7"/>',
     search: '<circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>',
     refresh: '<path d="M20 11A8 8 0 006 6.3L4 8.5"/><path d="M4 4v4.5h4.5"/><path d="M4 13a8 8 0 0014 4.7l2-2.2"/><path d="M20 20v-4.5h-4.5"/>',
+    calendar: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
+    star: '<path d="M12 3l2.8 5.7 6.2.9-4.5 4.4 1 6.2L12 17.2 6.5 20.2l1-6.2L3 9.6l6.2-.9z"/>',
+    alert: '<path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18v.5"/>',
+    book: '<path d="M4 5a2 2 0 012-2h13v16H6a2 2 0 00-2 2z"/><path d="M4 19V5M9 7h6"/>',
+    chart: '<path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/>',
+    table: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M9 4v16"/>',
+    pen: '<path d="M4 20l1-4L16.5 4.5a2 2 0 012.8 2.8L8 18.8z"/><path d="M14 7l3 3"/>',
+    image: '<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="M21 16l-5-5-8 8"/>',
+    doc: '<path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5M10 13h6M10 17h6"/>',
+    compass: '<circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/>',
+    tool: '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/>',
+    folder: '<path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>',
+    arrow: '<path d="M7 17L17 7M9 7h8v8"/>',
     out: '<path d="M14 4h6v6"/><path d="M20 4l-9 9"/><path d="M18 14v5a1 1 0 01-1 1H5a1 1 0 01-1-1V7a1 1 0 011-1h5"/>'
   };
   function ic(n) { return '<svg class="i" viewBox="0 0 24 24" aria-hidden="true">' + ICONOS[n] + '</svg>'; }
@@ -90,7 +103,36 @@
     var fa = a.fecha_limite || '9999', fb = b.fecha_limite || '9999';
     return fa < fb ? -1 : fa > fb ? 1 : (pa[a.prioridad] == null ? 1 : pa[a.prioridad]) - (pa[b.prioridad] == null ? 1 : pa[b.prioridad]);
   }
-  function inicial(n) { return n.split(/\s+/).map(function (p) { return p[0]; }).join('').slice(0, 2).toUpperCase(); }
+  function inicial(n) {
+    var p = n.trim().split(/\s+/);
+    if (p.length === 1) return p[0].charAt(0).toUpperCase() + p[0].charAt(1).toLowerCase();
+    return (p[0].charAt(0) + p[1].charAt(0)).toUpperCase();
+  }
+  // Logos propios que hay en assets/logos/<cliente>.png; el resto muestra sus iniciales hasta que se agregue el archivo.
+  var LOGOS = { general: 1, altavista: 1, mara: 1, euforia: 1 };
+  function avatar(c, extra) {
+    var cls = 'av ' + clasePerfil(c.perfil) + (extra ? ' ' + extra : '');
+    if (LOGOS[c.cliente]) return '<div class="' + cls + ' logo"><img src="assets/logos/' + esc(c.cliente) + '.png" alt=""></div>';
+    return '<div class="' + cls + '">' + esc(inicial(c.nombre)) + '</div>';
+  }
+  var TIPO = {
+    'Tablero': ['chart', 'lilac'], 'Forecast': ['chart', 'blue'], 'Fuente de datos': ['table', 'mint'], 'Copys': ['pen', 'peach'],
+    'Anuncios': ['image', 'rose'], 'Informe': ['doc', 'amber'], 'Estrategia': ['compass', 'lilac'], 'Propuesta': ['doc', 'blue'],
+    'Cuenta': ['link', 'mint'], 'Plataforma': ['link', 'blue'], 'Herramienta': ['tool', 'amber'], 'Otro': ['link', 'lilac']
+  };
+  var MARCAS = [[/facebook\.com|fb\.com|instagram\.com/, 'meta'], [/^ads\.google\.com$/, 'google'], [/tiktok\.com/, 'tiktok'],
+    [/linkedin\.com/, 'linkedin'], [/^(x|twitter)\.com$/, 'x'], [/youtube\.com/, 'youtube']];
+  function marca(url) {
+    var h = host(url);
+    for (var i = 0; i < MARCAS.length; i++) if (MARCAS[i][0].test(h)) return MARCAS[i][1];
+    return '';
+  }
+  function icoLink(l) {
+    var m = marca(l.url);
+    if (m) return '<span class="ti marca"><img src="assets/logos/' + m + '.png" alt=""></span>';
+    var t = TIPO[l.tipo] || TIPO.Otro;
+    return '<span class="ti t-' + t[1] + '">' + ic(t[0]) + '</span>';
+  }
   function clasePerfil(p) { return norm(p) || 'adcom'; }
 
   // ── Piezas ──
@@ -104,13 +146,17 @@
   function listaTareas(ts, vacio) {
     return ts.length ? '<div class="card list">' + ts.map(filaTarea).join('') + '</div>' : '<div class="card empty">' + esc(vacio) + '</div>';
   }
-  function filaLink(l, conCliente) {
-    var tipo = String(l.tipo || '').slice(0, 3).toUpperCase();
-    return '<a class="lk" href="' + esc(seguro(l.url)) + '" target="_blank" rel="noopener"><span class="ty">' + esc(tipo) + '</span><span class="t"><b>' + esc(l.nombre) + '</b><small>' +
-      (conCliente ? esc(nombreCliente(l.cliente)) + ' · ' : '') + esc(l.tipo) + ' · ' + esc(host(l.url)) + '</small></span>' + ic('out') + '</a>';
+  // Baldosa de acceso: logo o ícono por tipo, nombre y una línea de apoyo.
+  function baldosa(l, conCliente) {
+    var c = conCliente && l.cliente !== 'general' ? D.clientes.filter(function (x) { return x.cliente === l.cliente; })[0] : null;
+    var apoyo = l.detalle || (c ? c.nombre + ' · ' + l.tipo : host(l.url));
+    var icono = c && !marca(l.url) ? avatar(c, 'ico') : icoLink(l);
+    return '<a class="bal" href="' + esc(seguro(l.url)) + '" target="_blank" rel="noopener">' + icono +
+      '<span class="tl"><b>' + esc(l.nombre) + '</b><small>' + esc(apoyo) + '</small></span></a>';
   }
-  function tarjetaFav(l) {
-    return '<a class="fav" href="' + esc(seguro(l.url)) + '" target="_blank" rel="noopener"><b>' + esc(l.nombre) + '</b><small>' + esc(l.cliente === 'general' ? l.tipo : nombreCliente(l.cliente)) + '</small></a>';
+  function rejilla(ls, conCliente) { return '<div class="bals">' + ls.map(function (l) { return baldosa(l, conCliente); }).join('') + '</div>'; }
+  function sec(titulo, icono, accion) {
+    return '<div class="sec"><h2>' + (icono ? ic(icono) : '') + esc(titulo) + '</h2>' + (accion || '') + '</div>';
   }
 
   // ── Markdown (bitácoras) ──
@@ -166,15 +212,15 @@
       '<a class="tile today" href="#tareas/hoy"><b>' + hoy.length + '</b><span>Para hoy</span></a>' +
       '<a class="tile" href="#tareas/sem"><b>' + sem.length + '</b><span>Esta semana</span></a>' +
       '<a class="tile" href="#tareas"><b>' + ts.length + '</b><span>Abiertas</span></a></div>' +
-      '<div class="sec"><h2>Agenda de hoy</h2></div>' +
+      sec('Agenda de hoy', 'calendar') +
       (ag.length ? '<div class="card list">' + ag.map(function (e) {
         return '<div class="ev"><time>' + esc(e.hora || '·') + '</time><div><b>' + esc(e.titulo) + '</b>' + (e.cal || e.participantes ? '<small>' + esc((e.cal || '').trim().replace(/[()]/g, '')) + (e.participantes ? (e.cal ? ' · ' : '') + esc(e.participantes) : '') + '</small>' : '') + '</div></div>';
       }).join('') + '</div>' : '<div class="card empty">Sin reuniones hoy.</div>') +
-      (venc.length ? '<div class="sec"><h2>Vencidas</h2><a href="#tareas/venc">Ver todas</a></div>' + listaTareas(venc.slice(0, 6)) : '') +
-      '<div class="sec"><h2>Para hoy</h2></div>' + listaTareas(hoy, 'Nada con fecha de hoy.') +
-      (sem.length ? '<div class="sec"><h2>Próximos 7 días</h2><a href="#tareas/sem">Ver todas</a></div>' + listaTareas(sem.slice(0, 6)) : '') +
-      '<div class="sec"><h2>Por verificar</h2><button id="ver-verif">Cargar</button></div><div id="verif"><div class="card empty">Lo que cada bitácora dejó pendiente de revisar.</div></div>' +
-      (favs.length ? '<div class="sec"><h2>Favoritos</h2><a href="#accesos">Todos los accesos</a></div><div class="favs">' + favs.map(tarjetaFav).join('') + '</div>' : '') +
+      (venc.length ? sec('Vencidas', 'alert', '<a href="#tareas/venc">Ver todas</a>') + listaTareas(venc.slice(0, 6)) : '') +
+      sec('Para hoy', 'check') + listaTareas(hoy, 'Nada con fecha de hoy.') +
+      (sem.length ? sec('Próximos 7 días', 'calendar', '<a href="#tareas/sem">Ver todas</a>') + listaTareas(sem.slice(0, 6)) : '') +
+      sec('Por verificar', 'book', '<button id="ver-verif">Cargar</button>') + '<div id="verif"><div class="card empty">Lo que cada bitácora dejó pendiente de revisar.</div></div>' +
+      (favs.length ? sec('Favoritos', 'star', '<a href="#accesos">Todos los accesos</a>') + rejilla(favs, true) : '') +
       '<div class="foot">' + 'Actualizado ' + esc((D.actualizado || '').slice(11, 16)) + ' · <button id="salir">Cerrar sesión</button>' + '</div></div>';
   }
   function posHoy() {
@@ -215,7 +261,7 @@
         var mias = ts.filter(function (t) { return t._c === c.cliente; });
         var venc = mias.filter(function (t) { return t.fecha_limite && t.fecha_limite < h; }).length;
         var links = D.enlaces.filter(function (l) { return l.cliente === c.cliente; }).length;
-        return '<a class="card cl" href="#c/' + esc(c.cliente) + '"><div class="cl-h"><div class="av ' + clasePerfil(c.perfil) + '">' + esc(inicial(c.nombre)) + '</div><div><h3>' + esc(c.nombre) + '</h3><span class="chip ' + clasePerfil(c.perfil) + '">' + esc(c.perfil) + '</span></div></div>' +
+        return '<a class="card cl" href="#c/' + esc(c.cliente) + '"><div class="cl-h">' + avatar(c) + '<div><h3>' + esc(c.nombre) + '</h3><span class="chip ' + clasePerfil(c.perfil) + '">' + esc(c.perfil) + '</span></div></div>' +
           '<p>' + esc(c.resumen) + '</p><div class="cl-f"><span class="chip">' + mias.length + ' tarea' + (mias.length === 1 ? '' : 's') + '</span>' +
           (venc ? '<span class="chip late">' + venc + ' vencida' + (venc === 1 ? '' : 's') + '</span>' : '') + '<span class="chip">' + links + ' acceso' + (links === 1 ? '' : 's') + '</span></div></a>';
       }).join('') + (lista.length ? '' : '<div class="card empty" style="grid-column:1/-1">Ningún cliente coincide.</div>') + '</div></div>';
@@ -231,34 +277,45 @@
     if (!c) return '<div class="view"><a class="back" href="#clientes">' + ic('back') + 'Clientes</a><div class="card empty">No encontré ese cliente.</div></div>';
     sub = sub || 'resumen';
     var ts = tareasAbiertas().filter(function (t) { return t._c === clave; }).sort(orden);
-    var ls = D.enlaces.filter(function (l) { return l.cliente === clave; });
-    var tabs = [['resumen', 'Resumen'], ['tareas', 'Tareas · ' + ts.length], ['accesos', 'Accesos · ' + ls.length]];
+    var todos = D.enlaces.filter(function (l) { return l.cliente === clave; });
+    var cuentas = todos.filter(function (l) { return l.tipo === 'Cuenta'; });
+    var ls = todos.filter(function (l) { return l.tipo !== 'Cuenta'; });
+    var tabs = [['resumen', 'Resumen'], ['tareas', 'Tareas · ' + ts.length], ['accesos', 'Accesos · ' + todos.length]];
     if (c.bitacora) tabs.push(['bitacora', 'Bitácora']);
     var cuerpo = '';
     if (sub === 'resumen') {
       var reglas = String(c.reglas || '').split('|').map(function (x) { return x.trim(); }).filter(Boolean);
-      var favs = ls.filter(function (l) { return norm(l.favorito) === 'si'; });
-      cuerpo = '<div class="card">' +
-        (reglas.length ? '<div class="facts"><h3>Reglas del cliente</h3><ul>' + reglas.map(function (r) { return '<li>' + esc(r) + '</li>'; }).join('') + '</ul></div>' : '') +
-        (c.cuentas ? '<div class="facts"><h3>Cuentas</h3><p>' + esc(c.cuentas) + '</p></div>' : '') +
-        '<div class="facts"><h3>Perfil de trabajo</h3><p>' + (c.perfil === 'Freelance' ? 'Freelance: se opera con el perfil freelance, nunca con el de Adcom.' : c.perfil === 'Adcom' ? 'Adcom: se opera con el perfil por defecto (sin perfil freelance).' : 'Personal.') + '</p></div></div>' +
-        '<div class="sec"><h2>Próximas tareas</h2><a href="#c/' + esc(clave) + '/tareas">Ver todas</a></div>' + listaTareas(ts.slice(0, 4), 'Sin tareas abiertas.') +
-        (ls.length ? '<div class="sec"><h2>Accesos clave</h2><a href="#c/' + esc(clave) + '/accesos">Ver todos</a></div><div class="card list">' + (favs.length ? favs : ls.slice(0, 5)).map(function (l) { return filaLink(l); }).join('') + '</div>' : '');
+      var semanal = ls.filter(function (l) { return l.tipo === 'Tablero' && norm(l.favorito) === 'si'; })[0] || ls.filter(function (l) { return l.tipo === 'Tablero'; })[0];
+      var favs = ls.filter(function (l) { return l !== semanal && norm(l.favorito) === 'si'; });
+      var resto = (favs.length ? favs : ls.filter(function (l) { return l !== semanal; })).slice(0, 4);
+      cuerpo =
+        (semanal ? '<a class="hero" href="' + esc(seguro(semanal.url)) + '" target="_blank" rel="noopener"><span class="ti t-lilac big">' + ic('chart') + '</span><span class="tl"><b>' + esc(semanal.nombre) + '</b><small>' + esc(host(semanal.url)) + '</small></span><span class="go">' + ic('arrow') + '</span></a>' : '') +
+        (cuentas.length ? sec('Cuentas publicitarias', 'link') + rejilla(cuentas) : '') +
+        (resto.length ? sec('Accesos clave', 'star', '<a href="#c/' + esc(clave) + '/accesos">Ver todos · ' + todos.length + '</a>') + rejilla(resto) : '') +
+        (reglas.length ? sec('Reglas del cliente', 'book') + '<div class="card facts"><ul>' + reglas.map(function (r) { return '<li>' + esc(r) + '</li>'; }).join('') + '</ul></div>' : '') +
+        sec('Próximas tareas', 'check', '<a href="#c/' + esc(clave) + '/tareas">Ver todas</a>') + listaTareas(ts.slice(0, 4), 'Sin tareas abiertas.');
     } else if (sub === 'tareas') {
       cuerpo = listaTareas(ts, 'Sin tareas abiertas.');
     } else if (sub === 'accesos') {
-      var tipos = {};
-      ls.forEach(function (l) { (tipos[l.tipo] = tipos[l.tipo] || []).push(l); });
-      cuerpo = ls.length ? Object.keys(tipos).map(function (t) { return '<div class="grp">' + esc(t) + '</div><div class="card list">' + tipos[t].map(function (l) { return filaLink(l); }).join('') + '</div>'; }).join('') : '<div class="card empty">Todavía no hay accesos para este cliente.</div>';
+      var tipos = [];
+      todos.forEach(function (l) { if (tipos.indexOf(l.tipo) < 0) tipos.push(l.tipo); });
+      var sel = tipos.indexOf(filtros.ctipo) >= 0 ? filtros.ctipo : 'Todos';
+      var cuenta = function (t) { return todos.filter(function (l) { return l.tipo === t; }).length; };
+      cuerpo = todos.length ? '<div class="chips">' + ['Todos'].concat(tipos).map(function (t) {
+        return '<button class="pill' + (sel === t ? ' on' : '') + '" data-ctipo="' + esc(t) + '">' + esc(t) + (t === 'Todos' ? '' : ' · ' + cuenta(t)) + '</button>';
+      }).join('') + '</div>' + tipos.filter(function (t) { return sel === 'Todos' || sel === t; }).map(function (t) {
+        return '<div class="grp">' + esc(t) + '</div>' + rejilla(todos.filter(function (l) { return l.tipo === t; }));
+      }).join('') : '<div class="card empty">Todavía no hay accesos para este cliente.</div>';
     } else if (sub === 'bitacora') {
       cuerpo = '<div class="card" id="bit"><div class="loading">Leyendo la bitácora…</div></div>';
     }
     return '<div class="view"><a class="back" href="#clientes">' + ic('back') + 'Clientes</a>' +
-      '<div class="ch"><div class="av ' + clasePerfil(c.perfil) + '">' + esc(inicial(c.nombre)) + '</div><div><h1>' + esc(c.nombre) + '</h1><span class="chip ' + clasePerfil(c.perfil) + '">' + esc(c.perfil) + '</span></div></div>' +
-      (c.resumen ? '<p style="color:var(--soft);margin-bottom:4px">' + esc(c.resumen) + '</p>' : '') +
+      '<div class="ch">' + avatar(c, 'xl') + '<div><h1>' + esc(c.nombre) + '</h1><span class="chip ' + clasePerfil(c.perfil) + '">' + esc(c.perfil) + '</span></div></div>' +
+      (c.resumen ? '<p class="lead">' + esc(c.resumen) + '</p>' : '') +
       '<div class="sub">' + tabs.map(function (t) { return '<a class="pill' + (sub === t[0] ? ' on' : '') + '" href="#c/' + esc(clave) + '/' + t[0] + '">' + esc(t[1]) + '</a>'; }).join('') + '</div>' + cuerpo + '</div>';
   }
   function posCliente(clave, sub) {
+    document.querySelectorAll('[data-ctipo]').forEach(function (b) { b.onclick = function () { filtros.ctipo = b.dataset.ctipo; render(true); }; });
     if (sub !== 'bitacora') return;
     var c = D.clientes.filter(function (x) { return x.cliente === clave; })[0];
     var pintar = function (r) {
@@ -273,27 +330,45 @@
 
   function vAccesos() {
     var q = norm(filtros.q);
-    var tipos = ['Todos'];
+    var cuentaCli = function (k) { return D.enlaces.filter(function (l) { return l.cliente === k && l.tipo !== 'Cuenta'; }).length; };
+    var conAccesos = D.clientes.filter(function (c) { return D.enlaces.some(function (l) { return l.cliente === c.cliente; }); });
+    conAccesos.sort(function (x, y) { return x.cliente === 'general' ? -1 : y.cliente === 'general' ? 1 : 0; });
+    var tipos = [];
     D.enlaces.forEach(function (l) { if (tipos.indexOf(l.tipo) < 0) tipos.push(l.tipo); });
+    var filtrando = !!q || filtros.acliente !== 'Todos' || filtros.tipo !== 'Todos';
     var ls = D.enlaces.filter(function (l) {
+      if (filtros.acliente !== 'Todos' && l.cliente !== filtros.acliente) return false;
       if (filtros.tipo !== 'Todos' && l.tipo !== filtros.tipo) return false;
-      return !q || norm(l.nombre + ' ' + l.tipo + ' ' + nombreCliente(l.cliente) + ' ' + host(l.url)).indexOf(q) >= 0;
+      return !q || norm(l.nombre + ' ' + l.tipo + ' ' + nombreCliente(l.cliente) + ' ' + host(l.url) + ' ' + l.detalle).indexOf(q) >= 0;
     });
     var porCliente = {};
     ls.forEach(function (l) { (porCliente[l.cliente] = porCliente[l.cliente] || []).push(l); });
-    var claves = D.clientes.map(function (c) { return c.cliente; }).filter(function (k) { return porCliente[k]; });
-    claves.sort(function (a, b) { return a === 'general' ? -1 : b === 'general' ? 1 : 0; });
+    var grupos = conAccesos.filter(function (c) { return porCliente[c.cliente]; });
+    var cuerpo;
+    if (!filtrando) {
+      var favs = D.enlaces.filter(function (l) { return norm(l.favorito) === 'si'; });
+      cuerpo = (favs.length ? sec('Favoritos', 'star') + rejilla(favs, true) : '') + sec('Por cliente', 'folder') + '<div class="card list">' + grupos.map(function (c) {
+        return '<details class="acc"><summary>' + avatar(c, 'sm') + '<span class="nm">' + esc(c.nombre) + '</span><span class="chip">' + (porCliente[c.cliente].length) + '</span></summary>' + rejilla(porCliente[c.cliente]) + '</details>';
+      }).join('') + '</div>';
+    } else {
+      cuerpo = grupos.length ? grupos.map(function (c) {
+        return '<div class="grp">' + avatar(c, 'sm') + esc(c.nombre) + '</div>' + rejilla(porCliente[c.cliente]);
+      }).join('') : '<div class="card empty">No hay accesos con ese filtro.</div>';
+    }
     return '<div class="view"><div class="hi"><h1>Accesos</h1></div>' +
       '<div class="search">' + ic('search') + '<input id="q" type="search" placeholder="Buscar tablero, hoja o cliente" value="' + esc(filtros.q) + '" autocomplete="off"></div>' +
-      '<div class="chips">' + tipos.map(function (t) { return '<button class="pill' + (filtros.tipo === t ? ' on' : '') + '" data-tipo="' + esc(t) + '">' + esc(t) + '</button>'; }).join('') + '</div>' +
-      (claves.length ? claves.map(function (k) {
-        return '<div class="grp">' + esc(nombreCliente(k) || k) + '</div><div class="card list">' + porCliente[k].map(function (l) { return filaLink(l); }).join('') + '</div>';
-      }).join('') : '<div class="card empty">No hay accesos con ese filtro.</div>') + '</div>';
+      '<div class="chips cli">' + ['Todos'].concat(conAccesos.map(function (c) { return c.cliente; })).map(function (k) {
+        var c = D.clientes.filter(function (x) { return x.cliente === k; })[0];
+        return '<button class="pill' + (filtros.acliente === k ? ' on' : '') + '" data-acli="' + esc(k) + '">' + (c ? avatar(c, 'xs') : '') + (c ? esc(c.nombre) : 'Todos') + '</button>';
+      }).join('') + '</div>' +
+      '<div class="chips">' + ['Todos'].concat(tipos).map(function (t) { return '<button class="pill sm' + (filtros.tipo === t ? ' on' : '') + '" data-tipo="' + esc(t) + '">' + esc(t) + '</button>'; }).join('') + '</div>' +
+      cuerpo + '</div>';
   }
   function posAccesos() {
     var q = $('#q');
     q.oninput = function () { filtros.q = q.value; var pos = q.selectionStart; render(true); var n = $('#q'); n.focus(); n.setSelectionRange(pos, pos); };
     document.querySelectorAll('[data-tipo]').forEach(function (b) { b.onclick = function () { filtros.tipo = b.dataset.tipo; render(true); }; });
+    document.querySelectorAll('[data-acli]').forEach(function (b) { b.onclick = function () { filtros.acliente = b.dataset.acli; render(true); }; });
   }
 
   function vTareas() {
@@ -333,6 +408,7 @@
   function render(mismo) {
     if (!D) return;
     var r = ruta(), html = '', pos = function () {};
+    if (!mismo && r.v === 'c') filtros.ctipo = 'Todos';
     if (!mismo && r.v === 'tareas') { filtros.tarea = { venc: 'Vencidas', hoy: 'Hoy', sem: 'Semana' }[r.a] || 'Todas'; filtros.tcliente = ''; }
     var activa = r.v === 'c' ? 'clientes' : r.v;
     if (r.v === 'clientes') { html = vClientes(); pos = posClientes; }
