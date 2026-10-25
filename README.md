@@ -2,11 +2,11 @@
 
 Panel personal: clientes, tareas, accesos y bitácoras. PWA estática (GitHub Pages) más un widget de iPhone (Scriptable).
 
-**Este repo es público: solo lleva la app.** Ningún dato real vive aquí. Los datos (tareas, clientes, enlaces, bitácoras) salen del Apps Script del agente de Telegram, con una clave que está en el teléfono, no en el código. `?demo` usa datos inventados.
+**Este repo es público: solo lleva la app.** Ningún dato real vive aquí. Los datos (tareas, clientes, enlaces, bitácoras) salen del Apps Script del agente de Telegram, con una clave que está en el teléfono, no en el código.
 
 ## Estructura
 
-- `index.html`, `assets/app.js`, `assets/portal.css`: el portal. `assets/demo.js`: datos inventados.
+- `index.html`, `assets/app.js`, `assets/portal.css`: el portal.
 - `manifest.webmanifest`, `sw.js`: instalación en la pantalla de inicio (el service worker solo guarda la carcasa, nunca los datos).
 - `widget/Panel.js`: widget de Scriptable.
 - `robots.txt` y `noindex`: no se indexa.

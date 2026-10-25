@@ -4,7 +4,6 @@
 
   // ── Utilidades ──
   var $ = function (s, r) { return (r || document).querySelector(s); };
-  var DEMO = /(^|[?&])demo(=|&|$)/.test(location.search);
   var CFG = null;       // { u: url del Apps Script, k: clave }
   var D = null;         // datos del portal
   var VERIF = null;     // "por verificar" (carga perezosa)
@@ -58,17 +57,6 @@
 
   // ── Datos ──
   function api(action, params) {
-    if (DEMO) {
-      return new Promise(function (ok) {
-        setTimeout(function () {
-          var d = window.DEMO_DATA;
-          if (action === 'datos') ok(d.datos);
-          else if (action === 'verificar') ok(d.verificar);
-          else if (action === 'bitacora') ok({ cliente: params.cliente, bitacora: d.bitacora[params.cliente] || '' });
-          else ok({});
-        }, 150);
-      });
-    }
     var u = new URL(CFG.u);
     u.searchParams.set('action', action);
     u.searchParams.set('t', CFG.k);
@@ -187,7 +175,7 @@
       (sem.length ? '<div class="sec"><h2>Próximos 7 días</h2><a href="#tareas/sem">Ver todas</a></div>' + listaTareas(sem.slice(0, 6)) : '') +
       '<div class="sec"><h2>Por verificar</h2><button id="ver-verif">Cargar</button></div><div id="verif"><div class="card empty">Lo que cada bitácora dejó pendiente de revisar.</div></div>' +
       (favs.length ? '<div class="sec"><h2>Favoritos</h2><a href="#accesos">Todos los accesos</a></div><div class="favs">' + favs.map(tarjetaFav).join('') + '</div>' : '') +
-      '<div class="foot">' + (DEMO ? 'Modo demo · datos inventados' : 'Actualizado ' + esc((D.actualizado || '').slice(11, 16)) + ' · <button id="salir">Cerrar sesión</button>') + '</div></div>';
+      '<div class="foot">' + 'Actualizado ' + esc((D.actualizado || '').slice(11, 16)) + ' · <button id="salir">Cerrar sesión</button>' + '</div></div>';
   }
   function posHoy() {
     var b = $('#ver-verif');
@@ -378,17 +366,37 @@
     }).then(function () { girar(false); });
   }
 
+  // Dirección del Apps Script del agente. Sola no da acceso a nada: sin la clave responde "no autorizado".
+  var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwxmVtjvsmTBMg81foW9QJmsrEzeywOiR2BKiMZBzlIP4-VgNlPwkqS8FVJo-CcrsWi/exec';
+  function guardarClave(k) {
+    if (!/^[A-Za-z0-9_-]{16,}$/.test(k)) return false;
+    lsSet('mp_cfg', JSON.stringify({ u: SCRIPT_URL, k: k }));
+    return true;
+  }
+
+  // Guarda #u=...&k=... si trae las dos partes; devuelve si lo guardó.
+  function guardarEnlace(hash) {
+    var h = String(hash || '').replace(/^#/, '');
+    if (!/(^|&)k=/.test(h) || !/(^|&)u=/.test(h)) return false;
+    var p = new URLSearchParams(h);
+    if (!/^https:\/\/script\.google\.com\//.test(p.get('u') || '') || !p.get('k')) return false;
+    lsSet('mp_cfg', JSON.stringify({ u: p.get('u'), k: p.get('k') }));
+    return true;
+  }
+
   function iniciar() {
     $('#refresh').innerHTML = ic('refresh');
     $('#refresh').onclick = function () { BIT = {}; VERIF = null; cargar(true); };
-    if (DEMO) { CFG = {}; cargar(false); return; }
     // Enlace de instalación: #u=<url del script>&k=<clave>
-    var h = location.hash.replace(/^#/, '');
-    if (/(^|&)k=/.test(h) && /(^|&)u=/.test(h)) {
-      var p = new URLSearchParams(h);
-      lsSet('mp_cfg', JSON.stringify({ u: p.get('u'), k: p.get('k') }));
-      history.replaceState(null, '', location.pathname + '#hoy');
-    }
+    guardarEnlace(location.hash);
+    if (/(^|&)k=/.test(location.hash)) history.replaceState(null, '', location.pathname + '#hoy');
+    $('#entrar').onclick = function () {
+      var m = $('#login-err'), txt = $('#enlace').value.trim();
+      var ok = txt.indexOf('#') >= 0 ? guardarEnlace(txt.slice(txt.indexOf('#'))) : guardarClave(txt);
+      if (!ok) { m.textContent = 'No reconozco eso. Pega la clave (PORTAL_TOKEN) o el enlace completo.'; m.classList.remove('hide'); return; }
+      m.classList.add('hide');
+      iniciar();
+    };
     try { CFG = JSON.parse(lsGet('mp_cfg') || 'null'); } catch (e) { CFG = null; }
     if (!CFG || !CFG.u || !CFG.k) { mostrar('login'); return; }
     try { D = JSON.parse(lsGet('mp_cache') || 'null'); } catch (e2) { D = null; }

@@ -24,9 +24,11 @@
 <section id="login" class="hide">
   <img class="wordmark" src="assets/logo-michael-espinosa.png" alt="Michael Espinosa, estratega digital" width="1869" height="527">
   <h1>Todos mis clientes, <em>en un solo lugar</em></h1>
-  <p>Tareas, accesos y bitácoras por cliente. Para entrar usa el enlace personal de instalación; este panel no tiene contraseña que escribir.</p>
-  <div style="display:flex;gap:10px;flex-wrap:wrap">
-    <a class="btn ghost" href="?demo#hoy">Ver demo</a>
+  <p>Tareas, accesos y bitácoras por cliente. Pega la clave de acceso una sola vez en este dispositivo.</p>
+  <label class="pega" for="enlace">Clave de acceso (PORTAL_TOKEN)</label>
+  <div class="pega-row">
+    <input id="enlace" type="password" inputmode="text" placeholder="Pega la clave" autocomplete="off" autocapitalize="off" spellcheck="false">
+    <button class="btn" id="entrar" type="button">Entrar</button>
   </div>
   <p class="err hide" id="login-err"></p>
 </section>
@@ -40,7 +42,6 @@
   <nav class="tabs" id="tabs" aria-label="Secciones"></nav>
 </div>
 
-<script src="assets/demo.js"></script>
 <script src="assets/app.js"></script>
 <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(function(){});</script>
 </body>
