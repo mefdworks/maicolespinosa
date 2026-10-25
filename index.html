@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="color-scheme" content="light">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Michael Espinosa · Estratega Digital</title>
+<meta name="robots" content="noindex,nofollow">
+<meta name="description" content="Panel personal de Michael Espinosa: clientes, tareas, accesos y bitácoras.">
+<meta name="theme-color" content="#ffffff">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Michael">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="assets/icons/icon-192.png">
+<link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/portal.css">
+</head>
+<body>
+
+<section id="login" class="hide">
+  <img class="wordmark" src="assets/logo-michael-espinosa.png" alt="Michael Espinosa, estratega digital" width="1869" height="527">
+  <h1>Todos mis clientes, <em>en un solo lugar</em></h1>
+  <p>Tareas, accesos y bitácoras por cliente. Para entrar usa el enlace personal de instalación; este panel no tiene contraseña que escribir.</p>
+  <div style="display:flex;gap:10px;flex-wrap:wrap">
+    <a class="btn ghost" href="?demo#hoy">Ver demo</a>
+  </div>
+  <p class="err hide" id="login-err"></p>
+</section>
+
+<div id="app" class="hide">
+  <header class="top"><div class="top-in">
+    <div class="brand"><img class="mark" src="assets/logo-me.png" alt="" width="742" height="742"><div><b>Michael Espinosa</b><small>Estratega Digital</small></div></div>
+    <button class="icon-btn" id="refresh" aria-label="Actualizar"></button>
+  </div></header>
+  <main id="view"></main>
+  <nav class="tabs" id="tabs" aria-label="Secciones"></nav>
+</div>
+
+<script src="assets/demo.js"></script>
+<script src="assets/app.js"></script>
+<script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(function(){});</script>
+</body>
+</html>
